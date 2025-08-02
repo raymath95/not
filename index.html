@@ -52,10 +52,10 @@
         </div>
         <div class="flex items-stretch gap-3">
             <div class="flex-1 bg-green-500/90 backdrop-blur-sm border border-white/20 shadow-md rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
-                <span>จ่ายแล้ว</span><span id="total-paid-amount" class="text-xl font-bold tracking-tight">0.00</span>
+                <span>จ่ายแล้ว</span><span id="total-paid-amount" class="text-xl font-bold tracking-tight">0</span>
             </div>
             <div class="flex-1 bg-red-500/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
-                <span>ต้องจ่าย</span><span id="total-unpaid-amount" class="text-xl font-bold tracking-tight">0.00</span>
+                <span>ต้องจ่าย</span><span id="total-unpaid-amount" class="text-xl font-bold tracking-tight">0</span>
             </div>
         </div>
     </header>
@@ -78,7 +78,7 @@
         const brands = ['YVP', 'ซีพี-หมอดิน', 'ซอยล์เมต', 'พาริช', 'คิงส์โพดำ', 'ยารา', 'มงกุฎ', 'หัววัว', 'เรือใบ', 'อื่นๆ'];
 
         const formatDate = date => new Date(date).toISOString().split('T')[0];
-        const formatCurrency = amount => (parseFloat(amount) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const formatCurrency = amount => (Math.round(parseFloat(amount) || 0)).toLocaleString('th-TH');
         const setLoading = (isLoading) => loaderOverlay.classList.toggle('is-loading', isLoading);
         const showCustomMessage = (msg, type) => {
             messageBox.textContent = msg;
@@ -134,20 +134,20 @@
                 return;
             }
             if (currentFilter === 'unpaid') items.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
-            else items.sort((a, b) => b.rowNumber - a.rowNumber);
+            else items.sort((a, b) => (a.itemId || '').localeCompare(b.itemId || ''));
             const title = currentFilter === 'unpaid' ? 'รายการที่ต้องจ่าย' : 'รายการที่จ่ายแล้ว';
             const titleColor = currentFilter === 'unpaid' ? 'text-red-600' : 'text-violet-600';
             const listHtml = items.map(item => {
                 const daysRemaining = calculateDaysRemaining(item.dueDate);
                 const formattedDate = item.dueDate ? new Date(item.dueDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : 'ไม่ระบุ';
                 const escapedForAttr = (item.productDisplay || '').replace(/"/g, '"');
-                const paidToggleHtml = `<label for="pay-toggle-${item.rowNumber}" class="toggle-switch cursor-pointer"><input type="checkbox" id="pay-toggle-${item.rowNumber}" data-row-number="${item.rowNumber}" class="status-toggle sr-only" ${currentFilter === 'paid' ? 'checked' : ''}><div class="toggle-bg bg-gray-200 border-2 border-transparent w-12 h-7 rounded-full transition-colors ease-in-out duration-200"><div class="dot bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ease-in-out duration-200 m-0.5"></div></div></label>`;
-                const editButtonHtml = currentFilter === 'unpaid' ? `<button class="edit-button p-2 text-blue-500 hover:bg-blue-100 rounded-full transition-colors" data-row-number="${item.rowNumber}" title="แก้ไขรายการ"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>` : '';
-                const deleteButtonHtml = currentFilter === 'paid' ? `<button class="delete-button p-2 text-red-400 hover:bg-red-100 rounded-full" data-row-number="${item.rowNumber}" data-item-name="${escapedForAttr}" title="ลบรายการ"><svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
+                const paidToggleHtml = `<label for="pay-toggle-${item.itemId}" class="toggle-switch cursor-pointer"><input type="checkbox" id="pay-toggle-${item.itemId}" data-item-id="${item.itemId}" class="status-toggle sr-only" ${currentFilter === 'paid' ? 'checked' : ''}><div class="toggle-bg bg-gray-200 border-2 border-transparent w-12 h-7 rounded-full transition-colors ease-in-out duration-200"><div class="dot bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ease-in-out duration-200 m-0.5"></div></div></label>`;
+                const editButtonHtml = currentFilter === 'unpaid' ? `<button class="edit-button p-2 text-blue-500 hover:bg-blue-100 rounded-full transition-colors" data-item-id="${item.itemId}" title="แก้ไขรายการ"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>` : '';
+                const deleteButtonHtml = currentFilter === 'paid' ? `<button class="delete-button p-2 text-red-400 hover:bg-red-100 rounded-full" data-item-id="${item.itemId}" data-item-name="${escapedForAttr}" title="ลบรายการ"><svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
                 const actionHtml = `<div class="ml-4 flex items-center justify-center flex-shrink-0 gap-2">${editButtonHtml}${paidToggleHtml}${deleteButtonHtml}</div>`;
                 const brandHtml = item.brand ? `<p class="text-sm text-gray-500 mt-1">ยี่ห้อ: ${item.brand}</p>` : '';
                 const noteHtml = item.note ? `<p class="text-xs text-amber-800 bg-amber-100 rounded-md p-2 mt-2 break-all">${item.note}</p>` : '';
-                return `<div id="item-row-${item.rowNumber}" class="list-item flex items-start p-4 border-b border-gray-200"><div class="flex-grow"><div class="grid grid-cols-2 gap-x-3 items-start"><div class="col-span-1"><p class="font-semibold text-base truncate">${item.productDisplay}</p><p class="font-bold text-lg text-slate-800 mt-0.5">${formatCurrency(item.amount)}</p>${brandHtml}</div><div class="col-span-1 flex flex-col items-end text-right"><span class="text-xs font-semibold px-2 py-1 rounded-full ${daysRemaining.class}">${daysRemaining.text}</span><p class="text-sm text-gray-500 mt-1">${formattedDate}</p></div></div>${noteHtml}</div><div class="flex-shrink-0 self-center">${actionHtml}</div></div>`;
+                return `<div id="item-${item.itemId}" class="list-item flex items-start p-4 border-b border-gray-200"><div class="flex-grow"><div class="grid grid-cols-2 gap-x-3 items-start"><div class="col-span-1"><p class="font-semibold text-base truncate">${item.productDisplay}</p><p class="font-bold text-lg text-slate-800 mt-0.5">${formatCurrency(item.amount)}</p>${brandHtml}</div><div class="col-span-1 flex flex-col items-end text-right"><span class="text-xs font-semibold px-2 py-1 rounded-full ${daysRemaining.class}">${daysRemaining.text}</span><p class="text-sm text-gray-500 mt-1">${formattedDate}</p></div></div>${noteHtml}</div><div class="flex-shrink-0 self-center">${actionHtml}</div></div>`;
             }).join('');
             mainContent.innerHTML = `<div class="px-4 pt-4"><h2 class="text-xl font-bold mb-2 ${titleColor}">${title} (${items.length})</h2></div><div>${listHtml}</div>`;
         }
@@ -167,7 +167,7 @@
             const notesVal = data['หมายเหตุ'] || '';
             const vehicleRegs = (data['ทะเบียนรถ'] || '').split(',').map(v => v.trim()).filter(Boolean);
             const vehicleRegHtml = (vehicleRegs.length > 0 ? vehicleRegs : ['']).map(reg => `<div class="flex items-center gap-2 vehicle-reg-entry"><input type="text" name="vehicleReg" placeholder="กข 1234" class="form-input flex-grow" value="${reg}"><button type="button" class="remove-vehicle-button p-2 text-red-500 hover:bg-red-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>`).join('');
-            mainContent.innerHTML = `<div class="p-4"><div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-4 p-5 sm:p-6"><h2 class="text-2xl font-bold mb-6 text-center text-gray-800">${title}</h2><form id="item-form" class="space-y-5" data-mode="${mode}" data-row-number="${data.rowNumber || ''}"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-600 mb-1">วันที่สั่งสินค้า</label><input type="date" id="orderDate" value="${orderDateVal}" class="form-input" required></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ครบกำหนดชำระ</label><input type="date" id="dueDate" value="${dueDateVal}" class="form-input" required></div></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ประเภทสินค้า</label><select id="productType" class="form-select" required>${productTypes.map(t => `<option value="${t}" ${t === productTypeVal ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ยี่ห้อสินค้า</label><select id="brand" class="form-select"><option value="">-- ไม่ระบุ --</option>${brands.map(b => `<option value="${b}" ${b === brandVal ? 'selected' : ''}>${b}</option>`).join('')}</select></div><div class="p-5 bg-violet-50 rounded-xl space-y-5 border border-violet-100"><div><label class="block text-base font-medium text-gray-600">ยอดชำระแล้ว</label><input type="text" inputmode="decimal" id="paidAmount" value="${paidAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div><div><label class="block text-base font-medium text-gray-600">ยอดคงเหลือ</label><input type="text" inputmode="decimal" id="remainingAmount" value="${remainingAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div></div><div><label class="block text-sm font-medium text-gray-600">ทะเบียนรถ</label><div id="vehicleRegContainer" class="space-y-3 mt-1">${vehicleRegHtml}</div><button type="button" id="add-vehicle-button" class="mt-2 flex items-center gap-2 text-sm text-violet-600 font-semibold hover:text-violet-800"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>เพิ่มทะเบียน</span></button></div><div><label for="notes" class="block text-sm font-medium text-gray-600 mb-1">หมายเหตุ</label><textarea id="notes" name="notes" class="form-select" rows="3" placeholder="กรอกหมายเหตุ (ถ้ามี)">${notesVal}</textarea></div><div class="flex flex-col gap-3 pt-6"><button type="submit" class="w-full px-6 py-4 text-lg bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 active:scale-95 transition-transform">${buttonText}</button><button type="button" id="cancel-form" class="w-full px-6 py-3 text-base bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300">ยกเลิก</button></div></form></div></div>`;
+            mainContent.innerHTML = `<div class="p-4"><div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-4 p-5 sm:p-6"><h2 class="text-2xl font-bold mb-6 text-center text-gray-800">${title}</h2><form id="item-form" class="space-y-5" data-mode="${mode}" data-item-id="${data.ID || ''}"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-600 mb-1">วันที่สั่งสินค้า</label><input type="date" id="orderDate" value="${orderDateVal}" class="form-input" required></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ครบกำหนดชำระ</label><input type="date" id="dueDate" value="${dueDateVal}" class="form-input" required></div></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ประเภทสินค้า</label><select id="productType" class="form-select" required>${productTypes.map(t => `<option value="${t}" ${t === productTypeVal ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ยี่ห้อสินค้า</label><select id="brand" class="form-select"><option value="">-- ไม่ระบุ --</option>${brands.map(b => `<option value="${b}" ${b === brandVal ? 'selected' : ''}>${b}</option>`).join('')}</select></div><div class="p-5 bg-violet-50 rounded-xl space-y-5 border border-violet-100"><div><label class="block text-base font-medium text-gray-600">ยอดชำระแล้ว</label><input type="text" inputmode="decimal" id="paidAmount" value="${paidAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div><div><label class="block text-base font-medium text-gray-600">ยอดคงเหลือ</label><input type="text" inputmode="decimal" id="remainingAmount" value="${remainingAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div></div><div><label class="block text-sm font-medium text-gray-600">ทะเบียนรถ</label><div id="vehicleRegContainer" class="space-y-3 mt-1">${vehicleRegHtml}</div><button type="button" id="add-vehicle-button" class="mt-2 flex items-center gap-2 text-sm text-violet-600 font-semibold hover:text-violet-800"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>เพิ่มทะเบียน</span></button></div><div><label for="notes" class="block text-sm font-medium text-gray-600 mb-1">หมายเหตุ</label><textarea id="notes" name="notes" class="form-select" rows="3" placeholder="กรอกหมายเหตุ (ถ้ามี)">${notesVal}</textarea></div><div class="flex flex-col gap-3 pt-6"><button type="submit" class="w-full px-6 py-4 text-lg bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 active:scale-95 transition-transform">${buttonText}</button><button type="button" id="cancel-form" class="w-full px-6 py-3 text-base bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300">ยกเลิก</button></div></form></div></div>`;
             mainContent.querySelector('#item-form').addEventListener('submit', handleFormSubmit);
             mainContent.querySelector('#cancel-form').addEventListener('click', () => switchPage('list', currentFilter));
             const vehicleContainer = mainContent.querySelector('#vehicleRegContainer');
@@ -185,17 +185,33 @@
             const totalAmount = paidAmount + remainingAmount;
             if (totalAmount <= 0) { showCustomMessage('กรุณากรอกยอดเงิน', 'error'); return; }
             const vehicleRegs = Array.from(form.querySelectorAll('input[name="vehicleReg"]')).map(input => input.value.trim()).filter(Boolean);
+            
+            const dueDate = form.querySelector('#dueDate').value;
+            const today = new Date(); today.setHours(0, 0, 0, 0);
+            const due = new Date(dueDate); due.setHours(0, 0, 0, 0);
+            const daysDiff = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+            
+            let daysRemainingValue;
+            if(!dueDate) {
+                daysRemainingValue = '';
+            } else if (daysDiff < 0) {
+              daysRemainingValue = 'เกินกำหนด';
+            } else {
+              daysRemainingValue = daysDiff;
+            }
+
             const formData = {
-                'วันที่สั่งสินค้า': form.querySelector('#orderDate').value, 'ครบกำหนดชำระ': form.querySelector('#dueDate').value,
+                'วันที่สั่งสินค้า': form.querySelector('#orderDate').value, 'ครบกำหนดชำระ': dueDate,
                 'ประเภทสินค้า': form.querySelector('#productType').value, 'ยี่ห้อสินค้า': form.querySelector('#brand').value || '',
                 'ยอดชำระ': totalAmount, 'ทะเบียนรถ': vehicleRegs.join(', '), 'หมายเหตุ': form.querySelector('#notes').value,
                 'รายการที่ชำระแล้ว': paidAmount, 'รายการที่ยังไม่ชำระ': remainingAmount,
                 'สถานะการชำระ': remainingAmount <= 0 && paidAmount > 0,
+                'เหลืออีกกี่วัน': daysRemainingValue
             };
             try {
                 let payload, action;
                 if (mode === 'edit') {
-                    payload = { rowNumber: parseInt(form.dataset.rowNumber), formData, isPaidView: currentFilter === 'paid' };
+                    payload = { itemId: form.dataset.itemId, formData, isPaidView: currentFilter === 'paid' };
                     action = 'updateItem';
                 } else {
                     payload = { formData, isPaidView: currentFilter === 'paid' };
@@ -210,8 +226,8 @@
             }
         }
         
-        async function switchPage(page, filterOrRowNumber) {
-            currentFilter = (page === 'list') ? filterOrRowNumber : currentFilter;
+        async function switchPage(page, filterOrId) {
+            currentFilter = (page === 'list') ? filterOrId : currentFilter;
             document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('bg-violet-100', 'text-violet-700'));
             if (page === 'list') {
                 currentPage = 'list';
@@ -227,9 +243,8 @@
             } else if (page === 'edit') {
                 document.getElementById('nav-unpaid-items').classList.add('bg-violet-100', 'text-violet-700');
                 try {
-                    const result = await apiCall('GET', 'getItemData', { rowNumber: filterOrRowNumber });
-                    const dataWithRow = { ...result.data, rowNumber: filterOrRowNumber };
-                    renderForm('edit', dataWithRow);
+                    const result = await apiCall('GET', 'getItemData', { itemId: filterOrId });
+                    renderForm('edit', result.data);
                 } catch (err) { showCustomMessage('โหลดข้อมูลแก้ไขไม่ได้: ' + err.message, 'error'); }
             }
         }
@@ -252,12 +267,11 @@
             document.getElementById('nav-paid-items').addEventListener('click', () => switchPage('list', 'paid'));
             document.getElementById('nav-unpaid-items').addEventListener('click', () => switchPage('list', 'unpaid'));
             document.getElementById('refresh-button').addEventListener('click', initializeApp);
-
             mainContent.addEventListener('click', async (event) => {
                 const editBtn = event.target.closest('.edit-button');
                 if (editBtn) {
                     event.preventDefault();
-                    switchPage('edit', parseInt(editBtn.dataset.rowNumber, 10));
+                    switchPage('edit', editBtn.dataset.itemId);
                     return;
                 }
                 const deleteBtn = event.target.closest('.delete-button');
@@ -265,18 +279,17 @@
                     event.preventDefault();
                     if (confirm(`ยืนยันการลบรายการ "${deleteBtn.dataset.itemName}" ใช่หรือไม่?`)) {
                         try {
-                            const result = await apiCall('POST', 'deleteItem', { rowNumber: parseInt(deleteBtn.dataset.rowNumber, 10), isPaidView: currentFilter === 'paid' });
+                            const result = await apiCall('POST', 'deleteItem', { itemId: deleteBtn.dataset.itemId, isPaidView: currentFilter === 'paid' });
                             processPostResponse(result);
                         } catch (err) { showCustomMessage('ลบไม่สำเร็จ: ' + err.message, 'error'); switchPage('list', currentFilter); }
                     }
                 }
             });
-            
             mainContent.addEventListener('change', async (event) => {
                 const statusToggle = event.target.closest('.status-toggle');
                 if (statusToggle) {
                     try {
-                        const result = await apiCall('POST', 'updateItemStatus', { rowNumber: parseInt(statusToggle.dataset.rowNumber, 10), isPaid: statusToggle.checked, isPaidView: currentFilter === 'paid' });
+                        const result = await apiCall('POST', 'updateItemStatus', { itemId: statusToggle.dataset.itemId, isPaid: statusToggle.checked, isPaidView: currentFilter === 'paid' });
                         processPostResponse(result);
                     } catch (err) { showCustomMessage('อัปเดตไม่สำเร็จ: ' + err.message, 'error'); switchPage('list', currentFilter); }
                 }
