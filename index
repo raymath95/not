@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>รายการชำระ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            font-family: 'Kanit', sans-serif;
+            overscroll-behavior-y: contain;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #f8fafc;
+        }
+        .form-input, .form-select, .form-textarea { 
+            width: 100%; border-width: 1px; border-color: #e5e7eb; border-radius: 0.75rem;
+            box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); padding: 0.75rem 1rem; font-size: 1rem;
+            line-height: 1.5; color: #1f2937; background-color: #f9fafb; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: 2px solid transparent; outline-offset: 2px; border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(167, 139, 250, 0.3);
+        }
+        .text-glow { text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2); }
+        .toggle-switch input:checked + .toggle-bg { background-color: #8b5cf6; border-color: #8b5cf6; }
+        .toggle-switch input:checked + .toggle-bg .dot { transform: translateX(100%); }
+        .loader-container {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s, visibility 0.2s;
+        }
+        .loader-container.is-loading {
+            opacity: 1;
+            visibility: visible;
+        }
+        .loader {
+            border: 6px solid #e2e8f0; border-top: 6px solid #8b5cf6;
+            border-radius: 50%; width: 50px; height: 50px;
+            animation: spin 1.2s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="min-h-screen bg-gray-50 flex flex-col">
+
+    <div id="loader-overlay" class="loader-container">
+        <div class="loader"></div>
+    </div>
+
+    <div id="message-box" class="fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg z-50 transition-all duration-300 opacity-0 -translate-y-20 text-white font-semibold text-base"></div>
+
+    <header class="bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white p-4 flex flex-col gap-4 shadow-lg sticky top-0 z-10">
+        <div class="flex justify-between items-center">
+            <h1 class="text-3xl font-bold tracking-tight text-glow">รายการชำระ</h1>
+            <button id="refresh-button" title="โหลดข้อมูลใหม่" class="p-2 rounded-full hover:bg-white/20 active:bg-white/30 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.76 2.75L3 8"/><path d="M3 3v5h5"/></svg>
+            </button>
+        </div>
+        <div class="flex items-stretch gap-3">
+            <div class="flex-1 bg-green-500/90 backdrop-blur-sm border border-white/20 shadow-md rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
+                <span>จ่ายแล้ว</span>
+                <span id="total-paid-amount" class="text-xl font-bold tracking-tight">0.00</span>
+            </div>
+            <div class="flex-1 bg-red-500/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
+                <span>ต้องจ่าย</span>
+                <span id="total-unpaid-amount" class="text-xl font-bold tracking-tight">0.00</span>
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" class="flex-1 overflow-auto bg-white">
+        <!-- Content is rendered by JavaScript -->
+    </main>
+
+    <footer class="bg-white p-2 flex justify-around items-center shadow-[0_-2px_10px_rgba(0,0,0,0.08)] sticky bottom-0 z-10">
+        <button id="nav-add-item" class="nav-button flex flex-col items-center p-3 rounded-xl transition-all duration-200 w-1/3 text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span class="text-sm mt-1 font-semibold">จด</span></button>
+        <button id="nav-unpaid-items" class="nav-button flex flex-col items-center p-3 rounded-xl transition-all duration-200 w-1/3 text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="text-sm mt-1 font-semibold">ต้องจ่าย (<span id="unpaid-count">0</span>)</span></button>
+        <button id="nav-paid-items" class="nav-button flex flex-col items-center p-3 rounded-xl transition-all duration-200 w-1/3 text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><span class="text-sm mt-1 font-semibold">จ่ายแล้ว (<span id="paid-count">0</span>)</span></button>
+    </footer>
+
+    <script>
+        // --- CONFIGURATION & STATE ---
+        const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxDdIzdjYg5g-WAuLx_t5OytacRXEo-xM4aNu8gy0pjrkyowjPYzkjaPbN0fN6SiaD3mg/exec';
+        let currentPage = 'list';
+        let currentFilter = 'unpaid';
+        
+        // --- DOM ELEMENTS ---
+        const mainContent = document.getElementById('main-content');
+        const messageBox = document.getElementById('message-box');
+        const loaderOverlay = document.getElementById('loader-overlay');
+
+        // --- CONSTANTS ---
+        const productTypes = ['ปุ๋ย', 'ยา', 'ปุ๋ยเกล็ด', 'ค่างวดดอกเบี้ย', 'ค่าสินค้าอื่นๆ', 'ค่าบริการ', 'อื่นๆ'];
+        const brands = ['YVP', 'ซีพี-หมอดิน', 'ซอยล์เมต', 'พาริช', 'คิงส์โพดำ', 'ยารา', 'มงกุฎ', 'หัววัว', 'เรือใบ', 'อื่นๆ'];
+
+        // --- UTILITY FUNCTIONS ---
+        const formatDate = date => new Date(date).toISOString().split('T')[0];
+        const formatCurrency = amount => (parseFloat(amount) || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const setLoading = (isLoading) => {
+            loaderOverlay.classList.toggle('is-loading', isLoading);
+        };
+        const showCustomMessage = (msg, type) => {
+            messageBox.textContent = msg;
+            messageBox.className = `fixed top-5 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-lg z-50 transition-all duration-300 text-white font-semibold text-base ${type === 'success' ? 'bg-violet-500' : 'bg-red-600'}`;
+            messageBox.classList.remove('opacity-0', '-translate-y-20');
+            setTimeout(() => {
+                messageBox.classList.add('opacity-0', '-translate-y-20');
+            }, 2500);
+        };
+        const calculateDaysRemaining = dueDateStr => {
+            if (!dueDateStr) return { text: 'ไม่ระบุ', class: 'bg-gray-200 text-gray-600' };
+            const today = new Date();
+            const due = new Date(dueDateStr);
+            today.setHours(0, 0, 0, 0);
+            due.setHours(0, 0, 0, 0);
+            const days = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+            
+            if (days < 0) return { text: `เกิน ${Math.abs(days)} วัน`, class: 'bg-red-100 text-red-700' };
+            if (days === 0) return { text: 'จ่ายด่วนวันนี้', class: 'bg-red-600 text-white font-bold' };
+            if (days <= 3) return { text: `เหลือ ${days} วัน`, class: 'bg-amber-300 text-amber-800' };
+            return { text: `เหลือ ${days} วัน`, class: 'bg-green-200 text-green-700' };
+        };
+
+        // --- API & DATA HANDLING ---
+        async function apiCall(method, action, paramsOrPayload) {
+            setLoading(true);
+            try {
+                if (!WEB_APP_URL || WEB_APP_URL.includes('PASTE_YOUR')) throw new Error('WEB_APP_URL is not configured.');
+                
+                let url = `${WEB_APP_URL}?action=${action}`;
+                const options = { method: method, redirect: 'follow' };
+
+                if (method === 'GET' && paramsOrPayload) {
+                    url += `&${new URLSearchParams(paramsOrPayload).toString()}`;
+                } else if (method === 'POST') {
+                    options.body = JSON.stringify({ action: action, payload: paramsOrPayload });
+                    options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+                }
+                const response = await fetch(url, options);
+                if (!response.ok) throw new Error(`Network response was not ok (${response.status})`);
+                const result = await response.json();
+                if (result.status === 'error') throw new Error(result.message);
+                return result; 
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function processPostResponse(result) {
+            updateSummaryUI(result.data.summary);
+            renderList(result.data.items);
+            showCustomMessage(result.data.message || 'ดำเนินการสำเร็จ!', 'success');
+        }
+
+        // --- UI RENDERING ---
+        function updateSummaryUI(summary) {
+            document.getElementById('total-paid-amount').textContent = formatCurrency(summary.totalPaid);
+            document.getElementById('total-unpaid-amount').textContent = formatCurrency(summary.totalUnpaid);
+            document.getElementById('paid-count').textContent = summary.paidCount;
+            document.getElementById('unpaid-count').textContent = summary.unpaidCount;
+        }
+
+        function renderList(items) {
+             if (!items || items.length === 0) {
+                mainContent.innerHTML = `<div class="p-8 text-center text-gray-500 text-lg">${currentFilter === 'unpaid' ? '🎉 ไม่พบรายการที่ต้องจ่าย' : 'ไม่มีรายการที่จ่ายแล้ว'}</div>`;
+                return;
+            }
+
+            if (currentFilter === 'unpaid') {
+                items.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)); 
+            } else {
+                items.sort((a, b) => b.rowNumber - a.rowNumber); 
+            }
+
+            const title = currentFilter === 'unpaid' ? 'รายการที่ต้องจ่าย' : 'รายการที่จ่ายแล้ว';
+            const titleColor = currentFilter === 'unpaid' ? 'text-red-600' : 'text-violet-600';
+
+            const listHtml = items.map(item => {
+                const daysRemaining = calculateDaysRemaining(item.dueDate);
+                const formattedDate = item.dueDate ? new Date(item.dueDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : 'ไม่ระบุ';
+                const escapedForAttr = (item.productDisplay || '').replace(/"/g, '"');
+
+                const paidToggleHtml = `<label for="pay-toggle-${item.rowNumber}" class="toggle-switch cursor-pointer"><input type="checkbox" id="pay-toggle-${item.rowNumber}" data-row-number="${item.rowNumber}" class="status-toggle sr-only" ${currentFilter === 'paid' ? 'checked' : ''}><div class="toggle-bg bg-gray-200 border-2 border-transparent w-12 h-7 rounded-full transition-colors ease-in-out duration-200"><div class="dot bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ease-in-out duration-200 m-0.5"></div></div></label>`;
+                const deleteButtonHtml = currentFilter === 'paid' ? `<button class="delete-button p-2 text-red-400 hover:text-white hover:bg-red-500 rounded-full transition-colors duration-200 transform hover:scale-110" data-row-number="${item.rowNumber}" data-item-name="${escapedForAttr}" title="ลบรายการนี้อย่างถาวร"><svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
+                const actionHtml = `<div class="ml-4 flex items-center justify-center flex-shrink-0 gap-3">${paidToggleHtml}${deleteButtonHtml}</div>`;
+                const brandHtml = item.brand ? `<p class="text-sm text-gray-500 mt-1">ยี่ห้อ: ${item.brand}</p>` : '';
+                const noteHtml = item.note ? `<p class="text-xs text-amber-800 bg-amber-100 rounded-md p-2 mt-2 break-all">${item.note}</p>` : '';
+
+                return `<div id="item-row-${item.rowNumber}" class="list-item flex items-start p-4 border-b border-gray-200"><div class="flex-grow"><div class="grid grid-cols-2 gap-x-3 items-start"><div class="col-span-1"><p class="font-semibold text-base truncate">${item.productDisplay}</p><p class="font-bold text-lg text-slate-800 mt-0.5">${formatCurrency(item.amount)}</p>${brandHtml}</div><div class="col-span-1 flex flex-col items-end text-right"><span class="text-xs font-semibold px-2 py-1 rounded-full ${daysRemaining.class}">${daysRemaining.text}</span><p class="text-sm text-gray-500 mt-1">${formattedDate}</p></div></div>${noteHtml}</div><div class="flex-shrink-0 self-center">${actionHtml}</div></div>`;
+            }).join('');
+            
+            mainContent.innerHTML = `<div class="px-4 pt-4"><h2 class="text-xl font-bold mb-2 ${titleColor}">${title} (${items.length})</h2></div><div>${listHtml}</div>`;
+        }
+
+        function renderAddForm() {
+            const today = new Date();
+            const dueDate = new Date();
+            dueDate.setDate(today.getDate() + 7);
+            mainContent.innerHTML = `<div class="p-4"><div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-4 p-5 sm:p-6"><h2 class="text-2xl font-bold mb-6 text-center text-gray-800">เพิ่มรายการใหม่</h2><form id="add-item-form" class="space-y-5"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-600 mb-1">วันที่สั่งสินค้า</label><input type="date" id="orderDate" value="${formatDate(today)}" class="form-input" required></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ครบกำหนดชำระ</label><input type="date" id="dueDate" value="${formatDate(dueDate)}" class="form-input" required></div></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ประเภทสินค้า</label><select id="productType" class="form-select" required><option value="" disabled selected>-- เลือกประเภท --</option>${productTypes.map(t => `<option value="${t}">${t}</option>`).join('')}</select></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ยี่ห้อสินค้า</label><select id="brand" class="form-select"><option value="">-- เลือกยี่ห้อ (ถ้ามี) --</option>${brands.map(b => `<option value="${b}">${b}</option>`).join('')}</select></div><div class="p-5 bg-violet-50 rounded-xl space-y-5 border border-violet-100"><div><label class="block text-base font-medium text-gray-600">ยอดชำระแล้ว</label><input type="text" inputmode="decimal" id="paidAmount" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div><div><label class="block text-base font-medium text-gray-600">ยอดคงเหลือ</label><input type="text" inputmode="decimal" id="remainingAmount" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div></div><div><label class="block text-sm font-medium text-gray-600">ทะเบียนรถ</label><div id="vehicleRegContainer" class="space-y-3 mt-1"><div class="flex items-center gap-2 vehicle-reg-entry"><input type="text" name="vehicleReg" placeholder="กข 1234" class="form-input"></div></div> <button type="button" id="add-vehicle-button" class="mt-2 flex items-center gap-2 text-sm text-violet-600 font-semibold hover:text-violet-800 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>เพิ่มทะเบียนรถ</span></button></div><div><label for="notes" class="block text-sm font-medium text-gray-600 mb-1">หมายเหตุ</label><textarea id="notes" name="notes" class="form-select" rows="3" placeholder="กรอกหมายเหตุ (ถ้ามี)"></textarea></div><div class="flex flex-col gap-3 pt-6"><button type="submit" class="w-full px-6 py-4 text-lg bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 active:scale-95 transition-transform shadow-lg shadow-violet-200">บันทึกรายการ</button><button type="button" id="cancel-add-item" class="w-full px-6 py-3 text-base bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300">ยกเลิก</button></div></form></div></div>`;
+            
+            mainContent.querySelector('#add-item-form').addEventListener('submit', handleFormSubmit);
+            mainContent.querySelector('#cancel-add-item').addEventListener('click', () => switchPage('list', currentFilter));
+            const vehicleContainer = mainContent.querySelector('#vehicleRegContainer');
+            mainContent.querySelector('#add-vehicle-button').addEventListener('click', () => { const newEntry = document.createElement('div'); newEntry.className = 'flex items-center gap-2 vehicle-reg-entry'; newEntry.innerHTML = `<input type="text" name="vehicleReg" placeholder="ทะเบียนรถใหม่" class="form-input flex-grow"><button type="button" class="remove-vehicle-button p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors flex-shrink-0"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>`; vehicleContainer.appendChild(newEntry); });
+            vehicleContainer.addEventListener('click', function(event) { const removeButton = event.target.closest('.remove-vehicle-button'); if (removeButton) removeButton.closest('.vehicle-reg-entry').remove(); });
+        }
+        
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            const form = event.target; 
+            if (!form.querySelector('#productType').value) { showCustomMessage('กรุณาเลือกประเภทสินค้า', 'error'); return; }
+            const paidAmount = parseFloat(form.querySelector('#paidAmount').value) || 0;
+            const remainingAmount = parseFloat(form.querySelector('#remainingAmount').value) || 0;
+            const totalAmount = paidAmount + remainingAmount;
+            if (totalAmount <= 0) { showCustomMessage('กรุณากรอกยอดเงิน', 'error'); return; }
+            const vehicleRegValues = Array.from(form.querySelectorAll('input[name="vehicleReg"]')).map(input => input.value.trim()).filter(value => value);
+            const vehicleRegString = vehicleRegValues.join(', ');
+            const formData = {
+                'วันที่สั่งสินค้า': form.querySelector('#orderDate').value, 'ครบกำหนดชำระ': form.querySelector('#dueDate').value,
+                'ประเภทสินค้า': form.querySelector('#productType').value, 'ยี่ห้อสินค้า': form.querySelector('#brand').value || '',
+                'ยอดชำระ': totalAmount, 'ทะเบียนรถ': vehicleRegString, 'หมายเหตุ': form.querySelector('#notes').value,
+                'รายการที่ชำระแล้ว': paidAmount, 'รายการที่ยังไม่ชำระ': remainingAmount,
+                'สถานะการชำระ': remainingAmount <= 0 && paidAmount > 0,
+            };
+
+            try {
+                const payload = { formData: formData, isPaidView: currentFilter === 'paid' };
+                const result = await apiCall('POST', 'addItem', payload);
+                processPostResponse(result);
+                switchPage('list', 'unpaid');
+            } catch (err) {
+                showCustomMessage('บันทึกไม่สำเร็จ: ' + err.message, 'error');
+                switchPage('add');
+            }
+        }
+        
+        // --- PAGE NAVIGATION & INITIALIZATION ---
+        async function switchPage(page, filter) {
+            currentPage = page;
+            currentFilter = filter || currentFilter;
+            
+            document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('bg-violet-100', 'text-violet-700'));
+            const activeBtnId = currentPage === 'add' ? 'nav-add-item' : (currentFilter === 'paid' ? 'nav-paid-items' : 'nav-unpaid-items');
+            document.getElementById(activeBtnId).classList.add('bg-violet-100', 'text-violet-700');
+
+            if (currentPage === 'list') {
+                try {
+                    const result = await apiCall('GET', 'getFilteredData', { isPaid: currentFilter === 'paid' });
+                    renderList(result.data.items);
+                } catch (err) {
+                    mainContent.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">Error: ${err.message}</div>`;
+                }
+            } else {
+                renderAddForm();
+            }
+        }
+
+        async function initializeApp() {
+            if (!WEB_APP_URL || WEB_APP_URL.includes('PASTE_YOUR')) {
+                mainContent.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">ข้อผิดพลาด: ไม่ได้กำหนดค่า WEB_APP_URL</div>`;
+                setLoading(false);
+                return;
+            }
+            try {
+                const result = await apiCall('GET', 'getInitialData', { isPaid: currentFilter === 'paid' });
+                updateSummaryUI(result.data.summary);
+                renderList(result.data.items);
+                document.getElementById('nav-unpaid-items').classList.add('bg-violet-100', 'text-violet-700');
+            } catch(err) {
+                 mainContent.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">ไม่สามารถโหลดข้อมูลได้:<br>${err.message}</div>`;
+            }
+        }
+        
+        // --- EVENT LISTENERS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Static element listeners
+            document.getElementById('nav-add-item').addEventListener('click', () => switchPage('add'));
+            document.getElementById('nav-paid-items').addEventListener('click', () => switchPage('list', 'paid'));
+            document.getElementById('nav-unpaid-items').addEventListener('click', () => switchPage('list', 'unpaid'));
+            document.getElementById('refresh-button').addEventListener('click', initializeApp);
+
+            // Dynamic content listeners (event delegation)
+            mainContent.addEventListener('click', async (event) => {
+                const deleteBtn = event.target.closest('.delete-button');
+                if (deleteBtn) {
+                    event.preventDefault();
+                    const rowNumber = parseInt(deleteBtn.dataset.rowNumber, 10);
+                    const itemName = deleteBtn.dataset.itemName;
+                    if (confirm(`ยืนยันการลบรายการ "${itemName}" ใช่หรือไม่?\nการกระทำนี้ไม่สามารถย้อนกลับได้`)) {
+                        try {
+                            const payload = { rowNumber, isPaidView: currentFilter === 'paid' };
+                            const result = await apiCall('POST', 'deleteItem', payload);
+                            processPostResponse(result);
+                        } catch (err) {
+                            showCustomMessage('ลบไม่สำเร็จ: ' + err.message, 'error');
+                            switchPage('list', currentFilter);
+                        }
+                    }
+                }
+            });
+            
+            mainContent.addEventListener('change', async (event) => {
+                const statusToggle = event.target.closest('.status-toggle');
+                if (statusToggle) {
+                    const rowNumber = parseInt(statusToggle.dataset.rowNumber, 10);
+                    const isPaid = statusToggle.checked;
+                    try {
+                        const payload = { rowNumber, isPaid, isPaidView: currentFilter === 'paid' };
+                        const result = await apiCall('POST', 'updateItemStatus', payload);
+                        processPostResponse(result);
+                    } catch (err) {
+                        showCustomMessage('อัปเดตไม่สำเร็จ: ' + err.message, 'error');
+                        switchPage('list', currentFilter);
+                    }
+                }
+            });
+
+            // Initial load
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
