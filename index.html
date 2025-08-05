@@ -50,13 +50,23 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.76 2.75L3 8"/><path d="M3 3v5h5"/></svg>
             </button>
         </div>
-        <div class="flex items-stretch gap-3">
+        <div class="flex items-stretch gap-3 mb-3">
             <div class="flex-1 bg-green-500/90 backdrop-blur-sm border border-white/20 shadow-md rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
                 <span>จ่ายแล้ว</span><span id="total-paid-amount" class="text-xl font-bold tracking-tight">0</span>
             </div>
             <div class="flex-1 bg-red-500/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
                 <span>ต้องจ่าย</span><span id="total-unpaid-amount" class="text-xl font-bold tracking-tight">0</span>
             </div>
+        </div>
+        <div class="flex items-stretch gap-3">
+            <div class="flex-1 bg-blue-500/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
+                <span class="flex items-center">
+                    <span>ครบกำหนดใน 7 วัน</span>
+                    <span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">ใหม่</span>
+                </span>
+                <span id="total-due-7days" class="text-xl font-bold tracking-tight">0</span>
+            </div>
+            <div class="flex-1"></div> <!-- Empty div to maintain grid layout -->
         </div>
     </header>
     <main id="main-content" class="flex-1 overflow-auto bg-white"></main>
@@ -122,10 +132,28 @@
         }
 
         function updateSummaryUI(summary) {
+            console.log('Summary data received:', JSON.stringify(summary, null, 2));
+            
             document.getElementById('total-paid-amount').textContent = formatCurrency(summary.totalPaid);
             document.getElementById('total-unpaid-amount').textContent = formatCurrency(summary.totalUnpaid);
+            
+            // Ensure dueIn7Days exists and is a number
+            const dueIn7Days = Number(summary.dueIn7Days) || 0;
+            console.log('7-day due amount (raw):', summary.dueIn7Days, 'formatted:', formatCurrency(dueIn7Days));
+            
+            document.getElementById('total-due-7days').textContent = formatCurrency(dueIn7Days);
             document.getElementById('paid-count').textContent = summary.paidCount;
             document.getElementById('unpaid-count').textContent = summary.unpaidCount;
+            
+            // Highlight the 7-day due amount if there are upcoming payments
+            const due7DaysElement = document.getElementById('total-due-7days');
+            if (dueIn7Days > 0) {
+                due7DaysElement.parentElement.classList.add('animate-pulse');
+                // Add a pulsing animation that stops after 3 pulses
+                setTimeout(() => {
+                    due7DaysElement.parentElement.classList.remove('animate-pulse');
+                }, 3000);
+            }
         }
 
         function renderList(items) {
