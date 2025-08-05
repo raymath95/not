@@ -51,20 +51,21 @@
             </button>
         </div>
         <div class="flex items-stretch gap-3 mb-3">
-            <div class="flex-1 bg-green-500/90 backdrop-blur-sm border border-white/20 shadow-md rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
-                <span>จ่ายแล้ว</span><span id="total-paid-amount" class="text-xl font-bold tracking-tight">0</span>
+            <div class="flex-1 bg-gradient-to-br from-green-400 via-green-500 to-green-600 backdrop-blur-sm border border-green-300/50 shadow-md rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
+                <span class="text-green-100">จ่ายแล้ว</span>
+                <span id="total-paid-amount" class="text-xl font-bold tracking-tight text-white drop-shadow-sm">0</span>
             </div>
-            <div class="flex-1 bg-red-500/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
-                <span>ต้องจ่าย</span><span id="total-unpaid-amount" class="text-xl font-bold tracking-tight">0</span>
+            <div class="flex-1 bg-gradient-to-br from-red-400 via-red-500 to-red-600 backdrop-blur-sm border border-red-300/50 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
+                <span class="text-red-100">ต้องจ่าย</span>
+                <span id="total-unpaid-amount" class="text-xl font-bold tracking-tight text-white drop-shadow-sm">0</span>
             </div>
         </div>
         <div class="flex items-stretch gap-3">
-            <div class="flex-1 bg-blue-500/90 backdrop-blur-sm border border-white/20 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
-                <span class="flex items-center">
+            <div class="flex-1 bg-gradient-to-b from-amber-200 via-amber-300 to-amber-500 backdrop-blur-sm border border-amber-300/50 shadow-lg rounded-lg px-4 py-2 text-sm font-semibold flex flex-col justify-center">
+                <span class="flex items-center text-amber-900">
                     <span>ครบกำหนดใน 7 วัน</span>
-                    <span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">ใหม่</span>
                 </span>
-                <span id="total-due-7days" class="text-xl font-bold tracking-tight">0</span>
+                <span id="total-due-7days" class="text-xl font-bold tracking-tight text-amber-900 drop-shadow-sm">0</span>
             </div>
             <div class="flex-1"></div> <!-- Empty div to maintain grid layout -->
         </div>
