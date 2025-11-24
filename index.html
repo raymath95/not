@@ -372,10 +372,10 @@
             try {
                 let payload, action;
                 if (mode === 'edit') {
-                    payload = { itemId: form.dataset.itemId, formData, isPaidView: currentFilter === 'paid', fileData, fileName };
+                    payload = { itemId: form.dataset.itemId, formData: { ...formData, fileData, fileName }, isPaidView: currentFilter === 'paid' };
                     action = 'updateItem';
                 } else {
-                    payload = { formData, isPaidView: currentFilter === 'paid', fileData, fileName };
+                    payload = { formData: { ...formData, fileData, fileName }, isPaidView: currentFilter === 'paid' };
                     action = 'addItem';
                 }
                 const result = await apiCall('POST', action, payload);
