@@ -218,7 +218,7 @@
             if (days < 0) return { text: `เกิน ${Math.abs(days)} วัน`, class: 'bg-red-100 text-red-700' };
             if (days === 0) return { text: 'จ่ายด่วนวันนี้', class: 'bg-red-600 text-white font-bold' };
             if (days <= 3) return { text: `เหลือ ${days} วัน`, class: 'bg-amber-300 text-amber-800' };
-            return { text: `เหลือ ${days} วัน`, class: 'bg-green-200 text-green-700' };
+            return { text: `เหลือ ${days} วัน`, class: 'bg-green-200 text-green-700', days: days };
         };
 
         function openFilePopup(url, title) {
@@ -230,6 +230,30 @@
             filePopup.classList.remove('hidden');
             document.body.style.overflow = 'hidden'; // Prevent background scrolling
         }
+
+        function showBrowserNotification(title, body, tag) {
+            if (!('Notification' in window)) {
+                console.log('This browser does not support desktop notification');
+                return;
+            }
+            if (Notification.permission === 'granted') {
+                new Notification(title, { body, tag });
+            }
+        }
+
+        function checkAndNotifyForDueItems(items) {
+            if (Notification.permission !== 'granted') return;
+            const notifiedItems = JSON.parse(sessionStorage.getItem('notifiedItems') || '[]');
+            items.forEach(item => {
+                const daysRemaining = calculateDaysRemaining(item.dueDate);
+                if (daysRemaining.days === 1 && !notifiedItems.includes(item.itemId)) {
+                    showBrowserNotification('แจ้งเตือนครบกำหนดชำระ', `รายการ "${item.productDisplay}" จะครบกำหนดชำระในวันพรุ่งนี้`, `due-item-${item.itemId}`);
+                    notifiedItems.push(item.itemId);
+                }
+            });
+            sessionStorage.setItem('notifiedItems', JSON.stringify(notifiedItems));
+        }
+
         function closeFilePopup() {
             filePopup.classList.add('hidden');
             popupIframe.src = 'about:blank'; // Stop loading content
@@ -290,6 +314,10 @@
                 mainContent.innerHTML = `<div class="p-8 text-center text-gray-500 text-lg">${currentFilter === 'unpaid' ? '🎉 ไม่พบรายการที่ต้องจ่าย' : 'ไม่มีรายการที่จ่ายแล้ว'}</div>`;
                 return;
             }
+            if (currentFilter === 'unpaid') {
+                checkAndNotifyForDueItems(items);
+            }
+
             if (currentFilter === 'unpaid') items.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
             else items.sort((a, b) => (a.itemId || '').localeCompare(b.itemId || ''));
             const title = currentFilter === 'unpaid' ? 'รายการที่ต้องจ่าย' : 'รายการที่จ่ายแล้ว';
@@ -456,6 +484,11 @@
                 mainContent.innerHTML = `<div class="p-8 text-center text-red-500 font-bold">ข้อผิดพลาด: WEB_APP_URL ไม่ถูกต้อง</div>`;
                 setLoading(false); return;
             }
+            // Request notification permission on initial load
+            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+
             try {
                 const result = await apiCall('GET', 'getInitialData', { isPaid: currentFilter === 'paid' });
                 updateSummaryUI(result.data.summary);
