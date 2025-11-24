@@ -168,6 +168,24 @@
             </svg><span class="text-sm mt-1 font-semibold">จ่ายแล้ว (<span id="paid-count">0</span>)</span></button>
     </footer>
 
+    <!-- File Viewer Popup -->
+    <div id="file-popup" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-[9999] hidden">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col relative">
+            <div class="p-3 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
+                <h3 id="popup-title" class="font-semibold text-lg text-gray-800">ดูไฟล์</h3>
+                <button id="close-popup-button" class="p-2 rounded-full text-gray-500 hover:bg-gray-200 hover:text-gray-800 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="flex-grow p-1 bg-gray-200">
+                <iframe id="popup-iframe" src="" class="w-full h-full border-0" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+
     <script>
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxDdIzdjYg5g-WAuLx_t5OytacRXEo-xM4aNu8gy0pjrkyowjPYzkjaPbN0fN6SiaD3mg/exec';
         let currentPage = 'list';
@@ -176,6 +194,10 @@
         const mainContent = document.getElementById('main-content');
         const messageBox = document.getElementById('message-box');
         const loaderOverlay = document.getElementById('loader-overlay');
+        const filePopup = document.getElementById('file-popup');
+        const popupIframe = document.getElementById('popup-iframe');
+        const popupTitle = document.getElementById('popup-title');
+        const closePopupButton = document.getElementById('close-popup-button');
         const productTypes = ['ปุ๋ย', 'ยา', 'ปุ๋ยเกล็ด', 'ค่างวดดอกเบี้ย', 'ค่าสินค้าอื่นๆ', 'ค่าบริการ', 'อื่นๆ'];
         const brands = ['YVP', 'ซีพี-หมอดิน', 'ซอยล์เมต', 'พาริช', 'คิงส์โพดำ', 'ยารา', 'มงกุฎ', 'หัววัว', 'เรือใบ', 'อื่นๆ'];
 
@@ -198,6 +220,21 @@
             if (days <= 3) return { text: `เหลือ ${days} วัน`, class: 'bg-amber-300 text-amber-800' };
             return { text: `เหลือ ${days} วัน`, class: 'bg-green-200 text-green-700' };
         };
+
+        function openFilePopup(url, title) {
+            if (!url) return;
+            // For Google Drive links, use the preview URL
+            const displayUrl = url.replace("/view?usp=sharing", "/preview");
+            popupIframe.src = displayUrl;
+            popupTitle.textContent = title;
+            filePopup.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; // Prevent background scrolling
+        }
+        function closeFilePopup() {
+            filePopup.classList.add('hidden');
+            popupIframe.src = 'about:blank'; // Stop loading content
+            document.body.style.overflow = ''; // Restore scrolling
+        }
 
         async function apiCall(method, action, paramsOrPayload) {
             setLoading(true);
@@ -259,14 +296,14 @@
             const titleColor = currentFilter === 'unpaid' ? 'text-red-600' : 'text-violet-600';
             const listHtml = items.map(item => {
                 const escapedForAttr = (item.productDisplay || '').replace(/"/g, '"');
-                const uploadSlipButtonHtml = currentFilter === 'unpaid' ? `<button class="upload-slip-button p-2 text-green-500 hover:bg-green-100 rounded-full transition-colors" data-item-id="${item.itemId}" title="อัพโหลดสลิป/ใบเสร็จ"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></button>` : '';
+                const uploadSlipButtonHtml = currentFilter === 'unpaid' ? `<button class="upload-slip-button p-2 text-green-600 hover:bg-green-100 rounded-full transition-colors" data-item-id="${item.itemId}" title="อัพโหลดสลิป/ใบเสร็จ"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></button>` : '';
                 const paidToggleHtml = `<label for="pay-toggle-${item.itemId}" class="toggle-switch cursor-pointer"><input type="checkbox" id="pay-toggle-${item.itemId}" data-item-id="${item.itemId}" class="status-toggle sr-only" ${currentFilter === 'paid' ? 'checked' : ''}><div class="toggle-bg bg-gray-200 border-2 border-transparent w-12 h-7 rounded-full transition-colors ease-in-out duration-200"><div class="dot bg-white w-5 h-5 rounded-full shadow-md transform transition-transform ease-in-out duration-200 m-0.5"></div></div></label>`;
                 const editButtonHtml = currentFilter === 'unpaid' ? `<button class="edit-button p-2 text-blue-500 hover:bg-blue-100 rounded-full transition-colors" data-item-id="${item.itemId}" title="แก้ไขรายการ"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></button>` : '';
                 const deleteButtonHtml = currentFilter === 'paid' ? `<button class="delete-button p-2 text-red-400 hover:bg-red-100 rounded-full" data-item-id="${item.itemId}" data-item-name="${escapedForAttr}" title="ลบรายการ"><svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
                 const actionHtml = `<div class="ml-4 flex items-center justify-center flex-shrink-0 gap-2">${uploadSlipButtonHtml}${editButtonHtml}${paidToggleHtml}${deleteButtonHtml}</div>`;
                 const brandHtml = item.brand ? `<p class="text-sm text-gray-500 mt-1">ยี่ห้อ: ${item.brand}</p>` : '';
-                const attachmentIconHtml = item.attachmentUrl ? `<a href="${item.attachmentUrl}" target="_blank" class="inline-block ml-2 text-blue-500 hover:text-blue-700" title="ดูไฟล์แนบ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></a>` : '';
-                const slipIconHtml = item.slipUrl ? `<a href="${item.slipUrl}" target="_blank" class="inline-block ml-2 text-gray-400 hover:text-gray-600" title="ดูสลิป/ใบเสร็จ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></a>` : '';
+                const attachmentIconHtml = item.attachmentUrl ? `<a href="${item.attachmentUrl}" class="file-link inline-block ml-2 text-blue-500 hover:text-blue-700" title="ดูไฟล์แนบ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></a>` : '';
+                const slipIconHtml = item.slipUrl ? `<a href="${item.slipUrl}" class="file-link inline-block ml-2 text-gray-500 hover:text-gray-700" title="ดูสลิป/ใบเสร็จ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></a>` : '';
                 const noteHtml = item.note ? `<p class="text-xs text-amber-800 bg-amber-100 rounded-md p-2 mt-2 break-all">${item.note}</p>` : '';
 
                 let dateInfoHtml = '';
@@ -274,6 +311,9 @@
                     const daysRemaining = calculateDaysRemaining(item.dueDate);
                     const formattedDate = item.dueDate ? new Date(item.dueDate).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : 'ไม่ระบุ';
                     dateInfoHtml = `<div class="col-span-1 flex flex-col items-end text-right"><span class="text-xs font-semibold px-2 py-1 rounded-full ${daysRemaining.class}">${daysRemaining.text}</span><p class="text-sm text-gray-500 mt-1">${formattedDate}</p></div>`;
+                } else if (currentFilter === 'paid') {
+                    const paidDate = item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' }) : 'ไม่ระบุ';
+                    dateInfoHtml = `<div class="col-span-1 flex flex-col items-end text-right"><span class="text-xs font-semibold text-gray-600">วันที่จ่าย</span><p class="text-sm text-gray-500 mt-1">${paidDate}</p></div>`;
                 }
 
                 return `<div id="item-${item.itemId}" class="list-item flex items-start p-4 border-b border-gray-200"><div class="flex-grow"><div class="grid grid-cols-2 gap-x-3 items-start"><div class="col-span-1"><p class="font-semibold text-base truncate">${item.productDisplay}${attachmentIconHtml}${slipIconHtml}</p><p class="font-bold text-lg text-slate-800 mt-0.5">${formatCurrency(item.amount)}</p>${brandHtml}</div>${dateInfoHtml}</div>${noteHtml}</div><div class="flex-shrink-0 self-center">${actionHtml}</div></div>`;
@@ -430,6 +470,10 @@
             document.getElementById('nav-paid-items').addEventListener('click', () => switchPage('list', 'paid'));
             document.getElementById('nav-unpaid-items').addEventListener('click', () => switchPage('list', 'unpaid'));
             document.getElementById('refresh-button').addEventListener('click', initializeApp);
+            closePopupButton.addEventListener('click', closeFilePopup);
+            filePopup.addEventListener('click', (e) => {
+                if (e.target === filePopup) closeFilePopup();
+            });
             mainContent.addEventListener('click', async (event) => {
                 const editBtn = event.target.closest('.edit-button');
                 if (editBtn) {
@@ -470,6 +514,13 @@
                         }
                     };
                     fileInput.click();
+                }
+                const fileLink = event.target.closest('.file-link');
+                if (fileLink) {
+                    event.preventDefault();
+                    const url = fileLink.href;
+                    const title = fileLink.title;
+                    openFilePopup(url, title);
                 }
             });
             mainContent.addEventListener('change', async (event) => {
