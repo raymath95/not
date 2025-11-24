@@ -302,7 +302,10 @@
                 const deleteButtonHtml = currentFilter === 'paid' ? `<button class="delete-button p-2 text-red-400 hover:bg-red-100 rounded-full" data-item-id="${item.itemId}" data-item-name="${escapedForAttr}" title="ลบรายการ"><svg class="pointer-events-none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : '';
                 const actionHtml = `<div class="ml-4 flex items-center justify-center flex-shrink-0 gap-2">${uploadSlipButtonHtml}${editButtonHtml}${paidToggleHtml}${deleteButtonHtml}</div>`;
                 const brandHtml = item.brand ? `<p class="text-sm text-gray-500 mt-1">ยี่ห้อ: ${item.brand}</p>` : '';
-                const attachmentIconHtml = item.attachmentUrl ? `<a href="${item.attachmentUrl}" class="file-link inline-block ml-2 text-blue-500 hover:text-blue-700" title="ดูไฟล์แนบ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></a>` : '';
+                const attachmentUrls = (item.attachmentUrl || '').split(',').map(u => u.trim()).filter(Boolean);
+                const attachmentIconHtml = attachmentUrls.map(url => 
+                    `<a href="${url}" class="file-link inline-block ml-2 text-blue-500 hover:text-blue-700" title="ดูไฟล์แนบ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></a>`
+                ).join('');
                 const slipIconHtml = item.slipUrl ? `<a href="${item.slipUrl}" class="file-link inline-block ml-2 text-gray-500 hover:text-gray-700" title="ดูสลิป/ใบเสร็จ"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg></a>` : '';
                 const noteHtml = item.note ? `<p class="text-xs text-amber-800 bg-amber-100 rounded-md p-2 mt-2 break-all">${item.note}</p>` : '';
 
@@ -336,10 +339,12 @@
             const notesVal = data['หมายเหตุ'] || '';
             const vehicleRegs = (data['ทะเบียนรถ'] || '').split(',').map(v => v.trim()).filter(Boolean);
             const vehicleRegHtml = (vehicleRegs.length > 0 ? vehicleRegs : ['']).map(reg => `<div class="flex items-center gap-2 vehicle-reg-entry"><input type="text" name="vehicleReg" placeholder="กข 1234" class="form-input flex-grow" value="${reg}"><button type="button" class="remove-vehicle-button p-2 text-red-500 hover:bg-red-100 rounded-full"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button></div>`).join('');
-            const attachmentVal = data['ไฟล์แนบ'] || '';
-            const attachmentPreviewHtml = attachmentVal ? `<div class="mt-2"><a href="${attachmentVal}" target="_blank" class="text-sm text-blue-600 hover:underline">ดูไฟล์แนบปัจจุบัน</a></div>` : '';
+            const attachmentUrls = (data['ไฟล์แนบ'] || '').split(',').map(u => u.trim()).filter(Boolean);
+            const attachmentPreviewHtml = attachmentUrls.length > 0 
+                ? `<div class="mt-2 space-y-1"><p class="text-xs font-medium text-gray-500">ไฟล์แนบปัจจุบัน:</p><ul class="list-disc list-inside">${attachmentUrls.map(url => `<li><a href="${url}" target="_blank" class="text-sm text-blue-600 hover:underline">${url.split('/').pop().split('?')[0]}</a></li>`).join('')}</ul></div>` 
+                : '';
 
-            mainContent.innerHTML = `<div class="p-4"><div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-4 p-5 sm:p-6"><h2 class="text-2xl font-bold mb-6 text-center text-gray-800">${title}</h2><form id="item-form" class="space-y-5" data-mode="${mode}" data-item-id="${data.ID || ''}"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-600 mb-1">วันที่สั่งสินค้า</label><input type="date" id="orderDate" value="${orderDateVal}" class="form-input" required></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ครบกำหนดชำระ</label><input type="date" id="dueDate" value="${dueDateVal}" class="form-input" required></div></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ประเภทสินค้า</label><select id="productType" class="form-select" required>${productTypes.map(t => `<option value="${t}" ${t === productTypeVal ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ยี่ห้อสินค้า</label><select id="brand" class="form-select"><option value="">-- ไม่ระบุ --</option>${brands.map(b => `<option value="${b}" ${b === brandVal ? 'selected' : ''}>${b}</option>`).join('')}</select></div><div class="p-5 bg-violet-50 rounded-xl space-y-5 border border-violet-100"><div><label class="block text-base font-medium text-gray-600">ยอดชำระแล้ว</label><input type="text" inputmode="decimal" id="paidAmount" value="${paidAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div><div><label class="block text-base font-medium text-gray-600">ยอดคงเหลือ</label><input type="text" inputmode="decimal" id="remainingAmount" value="${remainingAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div></div><div><label class="block text-sm font-medium text-gray-600">ทะเบียนรถ</label><div id="vehicleRegContainer" class="space-y-3 mt-1">${vehicleRegHtml}</div><button type="button" id="add-vehicle-button" class="mt-2 flex items-center gap-2 text-sm text-violet-600 font-semibold hover:text-violet-800"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>เพิ่มทะเบียน</span></button></div><div><label for="attachment" class="block text-sm font-medium text-gray-600 mb-1">ไฟล์แนบ</label><input type="file" id="attachment" name="attachment" class="form-input" accept="image/*,application/pdf"><div id="attachment-preview-container" class="mt-2"></div>${attachmentPreviewHtml}</div><div><label for="notes" class="block text-sm font-medium text-gray-600 mb-1">หมายเหตุ</label><textarea id="notes" name="notes" class="form-select" rows="3" placeholder="กรอกหมายเหตุ (ถ้ามี)">${notesVal}</textarea></div><div class="flex flex-col gap-3 pt-6"><button type="submit" class="w-full px-6 py-4 text-lg bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 active:scale-95 transition-transform">${buttonText}</button><button type="button" id="cancel-form" class="w-full px-6 py-3 text-base bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300">ยกเลิก</button></div></form></div></div>`;
+            mainContent.innerHTML = `<div class="p-4"><div class="bg-white rounded-2xl w-full max-w-lg mx-auto my-4 p-5 sm:p-6"><h2 class="text-2xl font-bold mb-6 text-center text-gray-800">${title}</h2><form id="item-form" class="space-y-5" data-mode="${mode}" data-item-id="${data.ID || ''}"><div class="grid grid-cols-1 sm:grid-cols-2 gap-4"><div><label class="block text-sm font-medium text-gray-600 mb-1">วันที่สั่งสินค้า</label><input type="date" id="orderDate" value="${orderDateVal}" class="form-input" required></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ครบกำหนดชำระ</label><input type="date" id="dueDate" value="${dueDateVal}" class="form-input" required></div></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ประเภทสินค้า</label><select id="productType" class="form-select" required>${productTypes.map(t => `<option value="${t}" ${t === productTypeVal ? 'selected' : ''}>${t}</option>`).join('')}</select></div><div><label class="block text-sm font-medium text-gray-600 mb-1">ยี่ห้อสินค้า</label><select id="brand" class="form-select"><option value="">-- ไม่ระบุ --</option>${brands.map(b => `<option value="${b}" ${b === brandVal ? 'selected' : ''}>${b}</option>`).join('')}</select></div><div class="p-5 bg-violet-50 rounded-xl space-y-5 border border-violet-100"><div><label class="block text-base font-medium text-gray-600">ยอดชำระแล้ว</label><input type="text" inputmode="decimal" id="paidAmount" value="${paidAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div><div><label class="block text-base font-medium text-gray-600">ยอดคงเหลือ</label><input type="text" inputmode="decimal" id="remainingAmount" value="${remainingAmountVal}" placeholder="0.00" class="mt-1 form-input money-input text-right text-2xl font-semibold"></div></div><div><label class="block text-sm font-medium text-gray-600">ทะเบียนรถ</label><div id="vehicleRegContainer" class="space-y-3 mt-1">${vehicleRegHtml}</div><button type="button" id="add-vehicle-button" class="mt-2 flex items-center gap-2 text-sm text-violet-600 font-semibold hover:text-violet-800"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg><span>เพิ่มทะเบียน</span></button></div><div><label for="attachment" class="block text-sm font-medium text-gray-600 mb-1">ไฟล์แนบ (เลือกได้หลายไฟล์)</label><input type="file" id="attachment" name="attachment" class="form-input" multiple><div id="attachment-preview-container" class="mt-2"></div>${attachmentPreviewHtml}</div><div><label for="notes" class="block text-sm font-medium text-gray-600 mb-1">หมายเหตุ</label><textarea id="notes" name="notes" class="form-select" rows="3" placeholder="กรอกหมายเหตุ (ถ้ามี)">${notesVal}</textarea></div><div class="flex flex-col gap-3 pt-6"><button type="submit" class="w-full px-6 py-4 text-lg bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 active:scale-95 transition-transform">${buttonText}</button><button type="button" id="cancel-form" class="w-full px-6 py-3 text-base bg-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-300">ยกเลิก</button></div></form></div></div>`;
             mainContent.querySelector('#item-form').addEventListener('submit', handleFormSubmit);
             mainContent.querySelector('#cancel-form').addEventListener('click', () => switchPage('list', currentFilter));
             const vehicleContainer = mainContent.querySelector('#vehicleRegContainer');
@@ -349,16 +354,10 @@
                 const file = event.target.files[0];
                 const previewContainer = document.getElementById('attachment-preview-container');
                 previewContainer.innerHTML = '';
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        const img = document.createElement('img');
-                        img.src = e.target.result;
-                        img.className = 'max-h-40 rounded-lg shadow-md mt-2';
-                        previewContainer.appendChild(img);
-                    }
-                    reader.readAsDataURL(file);
-                }
+                const files = event.target.files;
+                if (files.length > 0) {
+                    previewContainer.innerHTML = `<p class="text-xs font-medium text-gray-500">ไฟล์ที่เลือก:</p><ul class="list-disc list-inside text-sm text-gray-700">${Array.from(files).map(f => `<li>${f.name} (${(f.size / 1024).toFixed(1)} KB)</li>`).join('')}</ul>`;
+                } 
             });
         }
 
@@ -397,27 +396,27 @@
             };
 
             const fileInput = form.querySelector('#attachment');
-            const file = fileInput.files[0];
-            let fileData = null;
-            let fileName = null; 
+            const files = fileInput.files;
+            let filesData = [];
 
-            if (file) {
-                fileName = file.name;
-                fileData = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
-            }
+            if (files.length > 0) {
+                filesData = await Promise.all(Array.from(files).map(file => {
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve({ fileName: file.name, fileData: reader.result });
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
+                }));
+            } 
 
             try {
                 let payload, action;
                 if (mode === 'edit') {
-                    payload = { itemId: form.dataset.itemId, formData: { ...formData, fileData, fileName }, isPaidView: currentFilter === 'paid' };
+                    payload = { itemId: form.dataset.itemId, formData: { ...formData, filesData }, isPaidView: currentFilter === 'paid' };
                     action = 'updateItem';
                 } else {
-                    payload = { formData: { ...formData, fileData, fileName }, isPaidView: currentFilter === 'paid' };
+                    payload = { formData: { ...formData, filesData }, isPaidView: currentFilter === 'paid' };
                     action = 'addItem';
                 }
                 const result = await apiCall('POST', action, payload);
