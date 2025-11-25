@@ -242,7 +242,7 @@
         }
 
         function checkAndNotifyForDueItems(items) {
-            if (Notification.permission !== 'granted') return;
+            if (!('Notification' in window) || Notification.permission !== 'granted') return;
             const notifiedItems = JSON.parse(sessionStorage.getItem('notifiedItems') || '[]');
             items.forEach(item => {
                 const daysRemaining = calculateDaysRemaining(item.dueDate);
@@ -485,7 +485,7 @@
                 setLoading(false); return;
             }
             // Request notification permission on initial load
-            if ('Notification' in window && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+            if (('Notification' in window) && Notification.permission !== 'granted' && Notification.permission !== 'denied') {
                 Notification.requestPermission();
             }
 
